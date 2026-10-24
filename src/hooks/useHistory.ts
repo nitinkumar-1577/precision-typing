@@ -9,6 +9,7 @@ export interface TestResult {
 
 const HISTORY_KEY = "typing_history";
 const PB_KEY = "typing_pb";
+const MAX_HISTORY_ENTRIES = 5;
 
 function loadHistory(): TestResult[] {
   try {
@@ -18,10 +19,11 @@ function loadHistory(): TestResult[] {
       const d = new Date(r.date).getTime();
       return !isNaN(d) && d >= fiveDaysAgo;
     });
-    if (filtered.length !== all.length) {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
+    const limited = filtered.slice(0, MAX_HISTORY_ENTRIES);
+    if (limited.length !== all.length) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(limited));
     }
-    return filtered;
+    return limited;
   } catch {
     return [];
   }
@@ -38,7 +40,7 @@ export function useHistory() {
   const addResult = useCallback((result: Omit<TestResult, "date">) => {
     const entry: TestResult = { ...result, date: new Date().toLocaleString() };
     setHistory((prev) => {
-      const updated = [entry, ...prev].slice(0, 10);
+      const updated = [entry, ...prev].slice(0, MAX_HISTORY_ENTRIES);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
       return updated;
     });
