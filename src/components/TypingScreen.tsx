@@ -37,7 +37,7 @@ const CharSpan = memo(function CharSpan({
 }) {
   let className = "text-muted-foreground";
   if (state === "correct") className = "text-success";
-  else if (state === "incorrect") className = "bg-incorrect-bg text-error";
+  else if (state === "incorrect") className = "text-foreground";
   else if (state === "current") className = "bg-primary/20 text-foreground";
 
   return <span className={className}>{char}</span>;
