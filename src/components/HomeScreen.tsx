@@ -51,6 +51,8 @@ export function HomeScreen({
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [validationOpen, setValidationOpen] = useState(false);
   const targetInputRef = useRef<HTMLInputElement>(null);
+  const [wordTargetText, setWordTargetText] = useState(String(wordCount));
+  const [keystrokeTargetText, setKeystrokeTargetText] = useState(String(keystrokeCount));
 
   useEffect(() => {
     const onPrompt = (event: Event) => {
@@ -138,9 +140,14 @@ export function HomeScreen({
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-foreground">Words (1–2000)</label>
                     <input
-                      type="number" min={1} max={2000} value={wordCount}
+                      type="number" min={1} max={2000}
                       ref={targetInputRef}
-                      onChange={(e) => handleWordChange(Number(e.target.value))}
+                      value={wordTargetText}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setWordTargetText(raw);
+                        if (raw !== "") handleWordChange(Number(raw));
+                      }}
                       className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
                     />
                   </div>
@@ -158,9 +165,13 @@ export function HomeScreen({
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-foreground">Keystrokes (5–10000)</label>
                     <input
-                      type="number" min={5} max={10000} value={keystrokeCount}
+                      type="number" min={1} max={10000} value={keystrokeTargetText}
                       ref={targetInputRef}
-                      onChange={(e) => handleKeystrokeChange(Number(e.target.value))}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setKeystrokeTargetText(raw);
+                        if (raw !== "") handleKeystrokeChange(Number(raw));
+                      }}
                       className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
                     />
                   </div>
@@ -214,7 +225,7 @@ export function HomeScreen({
             </div>
 <div className="flex justify-center w-full">
             <Button onClick={() => {
-              const target = inputMode === "words" ? wordCount : inputMode === "keystrokes" ? keystrokeCount : 1;
+              const target = inputMode === "words" ? Number(wordTargetText) : inputMode === "keystrokes" ? Number(keystrokeTargetText) : 1;
               if (!Number.isInteger(target) || target <= 0) {
                 setValidationOpen(true);
                 return;

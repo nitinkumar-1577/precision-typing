@@ -85,7 +85,7 @@ export function useTypingEngine(): TypingEngineReturn {
     durationRef.current = duration;
     textRef.current = newText; inputRef.current = ""; startTimeRef.current = null;
     setText(newText); setUserInput(""); setCurrentIndex(0); setTimeLeft(durationRef.current * 60);
-    setWpm(0); setGrossWpm(0); setAccuracy(100); setErrorCount(0); setHalfMistakes(0); setFullMistakes(0);
+    setWpm(0); setGrossWpm(0); setAccuracy(100); setErrorCount(0);
     setIsRunning(false); setIsFinished(false); setScreen("typing");
   }, [customParagraph, duration, inputMode, keystrokeCount, selectedParagraphId, wordCount]);
 
