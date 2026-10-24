@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildExactCharacterPassage, calculateTypingStats, countWords } from "@/lib/typing";
+import { buildExactCharacterPassage, calculateTypingStats, countWords, getHighlightState } from "@/lib/typing";
 
 describe("typing calculations", () => {
   it("builds an exact character target", () => {
@@ -32,6 +32,14 @@ describe("typing calculations", () => {
     expect(stats.grossWpm).toBe(0);
     expect(stats.netWpm).toBe(0);
     expect(Number.isFinite(stats.accuracy)).toBe(true);
+  });
+
+  it("isolates character highlight states", () => {
+    expect(getHighlightState("a", "axb", 0, 3)).toBe("correct");
+    expect(getHighlightState("b", "axb", 1, 3)).toBe("incorrect");
+    expect(getHighlightState("c", "ax", 2, 3)).toBe("missed");
+    expect(getHighlightState("d", "ax", 3, 3)).toBe("current");
+    expect(getHighlightState("e", "ax", 4, 3)).toBe("pending");
   });
 
 });

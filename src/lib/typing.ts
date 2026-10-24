@@ -8,6 +8,20 @@ export interface TypingStats {
   kdph: number;
 }
 
+export type HighlightState = "correct" | "incorrect" | "missed" | "pending" | "current";
+
+export function getHighlightState(
+  referenceCharacter: string,
+  input: string,
+  index: number,
+  cursorIndex: number,
+): HighlightState {
+  if (index === cursorIndex) return "current";
+  if (index >= cursorIndex) return "pending";
+  if (index >= input.length) return "missed";
+  return input[index] === referenceCharacter ? "correct" : "incorrect";
+}
+
 export function countWords(value: string): number {
   return value.trim() ? value.trim().split(/\s+/).length : 0;
 }

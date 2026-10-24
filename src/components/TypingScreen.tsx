@@ -3,7 +3,6 @@ import { Home, Volume2, VolumeX } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PersonalBestBadge } from "@/components/PersonalBestBadge";
 import type { SoundProfile } from "@/hooks/useTypingSound";
-import { alignCharacters } from "@/lib/typing";
 
 interface TypingScreenProps {
   text: string;
@@ -33,11 +32,11 @@ interface TypingScreenProps {
 const CharSpan = memo(function CharSpan({
   char, state,
 }: {
-  char: string; state: "correct" | "incorrect" | "pending" | "current";
+  char: string; state: "correct" | "incorrect" | "missed" | "pending" | "current";
 }) {
   let className = "text-muted-foreground";
   if (state === "correct") className = "text-success";
-  else if (state === "incorrect") className = "bg-incorrect-bg text-error";
+  else if (state === "incorrect" || state === "missed") className = "bg-red-500/20 text-red-500";
   else if (state === "current") className = "bg-primary/20 text-foreground";
 
   return <span className={className}>{char}</span>;
@@ -64,12 +63,19 @@ export function TypingScreen({
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const referenceStates = useMemo(() => alignCharacters(text, userInput).referenceStates, [text, userInput]);
-  const renderedText = useMemo(() => text.split("").map((char, i) => {
-    let state: "correct" | "incorrect" | "pending" | "current" = referenceStates[i] || "pending";
-    if (i === currentIndex) state = "current";
-    return <CharSpan key={i} char={char} state={state} />;
-  }), [text, referenceStates, currentIndex]);
+  const renderedText = useMemo(() => text.split("").map((char, index) => {
+    let state: "correct" | "incorrect" | "missed" | "pending" | "current" = "pending";
+    if (index === currentIndex) {
+      state = "current";
+    } else if (index < currentIndex) {
+      if (index >= userInput.length) {
+        state = "missed";
+      } else {
+        state = userInput[index] === char ? "correct" : "incorrect";
+      }
+    }
+    return <CharSpan key={index} char={char} state={state} />;
+  }), [text, userInput, currentIndex]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
