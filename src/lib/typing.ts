@@ -96,11 +96,13 @@ export function alignCharacters(reference: string, input: string): {
       comparisonCount += 1;
       row -= 1; col -= 1;
     } else if (row > 0 && costs[row][col] === costs[row - 1][col] + 1) {
-      states[row - 1] = "incorrect";
+      // A reference suffix with no corresponding input is still pending,
+      // not an error. It becomes an omission only once later input exists.
+      states[row - 1] = col > 0 ? "incorrect" : "pending";
       comparisonCount += 1;
       row -= 1;
     } else {
-      if (row > 0) states[row - 1] = "incorrect";
+      if (row > 0) states[row - 1] = col > 0 ? "incorrect" : "pending";
       comparisonCount += 1;
       col -= 1;
     }
