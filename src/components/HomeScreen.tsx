@@ -77,6 +77,7 @@ export function HomeScreen({
   const handleKeystrokeChange = (val: number) => {
     const clamped = Math.min(10000, Math.max(0, val));
     setKeystrokeCount(clamped);
+    setWordCount(Math.ceil(clamped / 5));
   };
 
   const updateTargetText = (
@@ -185,7 +186,10 @@ export function HomeScreen({
                     />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground pt-2">Word target is independent of character count</p>
+                    <label className="text-sm font-medium text-foreground">Equivalent words</label>
+                    <p className="rounded-xl border border-input bg-background/50 px-3 py-2 text-sm text-muted-foreground">
+                      {Math.ceil(keystrokeCount / 5)} words (5 characters per word)
+                    </p>
                   </div>
                 </div>
               </div>
