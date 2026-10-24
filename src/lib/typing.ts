@@ -37,11 +37,9 @@ export function calculateTypingStats(
   input: string,
   elapsedSeconds: number,
 ): TypingStats {
-  const comparedCharacters = Math.max(reference.length, input.length);
-  let correctCharacters = 0;
-  for (let i = 0; i < Math.min(reference.length, input.length); i += 1) {
-    if (reference[i] === input[i]) correctCharacters += 1;
-  }
+  const alignment = alignCharacters(reference, input);
+  const comparedCharacters = alignment.comparisonCount;
+  const correctCharacters = alignment.correctCharacters;
   const incorrectCharacters = Math.max(0, comparedCharacters - correctCharacters);
   const minutes = Math.max(0, elapsedSeconds) / 60;
   const grossWpm = minutes > 0 ? Math.round((input.length / 5) / minutes) : 0;
@@ -55,59 +53,40 @@ export function calculateTypingStats(
   return { correctCharacters, incorrectCharacters, comparedCharacters, accuracy, grossWpm, netWpm, kdph };
 }
 
-export interface MistakeCounts {
-  halfMistakes: number;
-  fullMistakes: number;
-}
-
-export function classifyMistakes(reference: string, input: string): MistakeCounts {
-  const expected = reference.split(/\s+/).filter(Boolean);
-  const actual = input.split(/\s+/).filter(Boolean);
-  let expectedIndex = 0;
-  let actualIndex = 0;
-  let halfMistakes = 0;
-  let fullMistakes = 0;
-
-  while (expectedIndex < expected.length && actualIndex < actual.length) {
-    const expectedWord = expected[expectedIndex];
-    const actualWord = actual[actualIndex];
-    if (expectedWord === actualWord) {
-      expectedIndex += 1;
-      actualIndex += 1;
-      continue;
+export function alignCharacters(reference: string, input: string): {
+  correctCharacters: number;
+  comparisonCount: number;
+  referenceStates: Array<"correct" | "incorrect" | "pending">;
+} {
+  const rows = reference.length + 1;
+  const cols = input.length + 1;
+  const costs = Array.from({ length: rows }, (_, row) => Array.from({ length: cols }, (_, col) => row + col));
+  for (let row = 1; row < rows; row += 1) {
+    for (let col = 1; col < cols; col += 1) {
+      const substitution = costs[row - 1][col - 1] + (reference[row - 1] === input[col - 1] ? 0 : 1);
+      costs[row][col] = Math.min(costs[row - 1][col] + 1, costs[row][col - 1] + 1, substitution);
     }
-    if (actual[actualIndex + 1] === expectedWord || actualWord === expected[expectedIndex + 1]) {
-      fullMistakes += 1;
-      if (actual[actualIndex + 1] === expectedWord) actualIndex += 1;
-      else expectedIndex += 1;
-      continue;
-    }
-    if (
-      actualWord.toLowerCase() === expectedWord.toLowerCase() ||
-      stripPunctuation(actualWord) === stripPunctuation(expectedWord) ||
-      similarity(actualWord, expectedWord) >= 0.5
-    ) {
-      halfMistakes += 1;
+  }
+  const states = Array<"correct" | "incorrect" | "pending">(reference.length).fill("pending");
+  let row = reference.length;
+  let col = input.length;
+  let correctCharacters = 0;
+  let comparisonCount = 0;
+  while (row > 0 || col > 0) {
+    if (row > 0 && col > 0 && costs[row][col] === costs[row - 1][col - 1] + (reference[row - 1] === input[col - 1] ? 0 : 1)) {
+      states[row - 1] = reference[row - 1] === input[col - 1] ? "correct" : "incorrect";
+      if (reference[row - 1] === input[col - 1]) correctCharacters += 1;
+      comparisonCount += 1;
+      row -= 1; col -= 1;
+    } else if (row > 0 && costs[row][col] === costs[row - 1][col] + 1) {
+      states[row - 1] = "incorrect";
+      comparisonCount += 1;
+      row -= 1;
     } else {
-      fullMistakes += 1;
+      if (row > 0) states[row - 1] = "incorrect";
+      comparisonCount += 1;
+      col -= 1;
     }
-    expectedIndex += 1;
-    actualIndex += 1;
   }
-  fullMistakes += Math.max(0, actual.length - actualIndex);
-  return { halfMistakes, fullMistakes };
-}
-
-function stripPunctuation(value: string): string {
-  return value.replace(/[^\w\s]/g, "");
-}
-
-function similarity(a: string, b: string): number {
-  const maxLength = Math.max(a.length, b.length);
-  if (!maxLength) return 1;
-  let matches = 0;
-  for (let i = 0; i < Math.min(a.length, b.length); i += 1) {
-    if (a[i] === b[i]) matches += 1;
-  }
-  return matches / maxLength;
+  return { correctCharacters, comparisonCount, referenceStates: states };
 }

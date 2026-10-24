@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PersonalBestBadge } from "@/components/PersonalBestBadge";
 import { HistoryTable } from "@/components/HistoryTable";
 import type { TestResult } from "@/hooks/useHistory";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface HomeScreenProps {
   wordCount: number;
@@ -49,6 +49,8 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const paragraphCount = getParagraphCount();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [validationOpen, setValidationOpen] = useState(false);
+  const targetInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onPrompt = (event: Event) => {
@@ -66,12 +68,12 @@ export function HomeScreen({
   };
 
   const handleWordChange = (val: number) => {
-    const clamped = Math.min(2000, Math.max(1, val));
+    const clamped = Math.min(2000, Math.max(0, val));
     setWordCount(clamped);
   };
 
   const handleKeystrokeChange = (val: number) => {
-    const clamped = Math.min(10000, Math.max(5, val));
+    const clamped = Math.min(10000, Math.max(0, val));
     setKeystrokeCount(clamped);
   };
 
@@ -113,7 +115,7 @@ export function HomeScreen({
                 <Type className="h-3.5 w-3.5" /> Mode
               </label>
               <div className="flex rounded-xl border border-border/50 overflow-hidden">
-                {(["words", "keystrokes", "paragraph", "ssc-dest"] as InputMode[]).map((mode) => (
+                {(["words", "keystrokes", "paragraph"] as InputMode[]).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setInputMode(mode)}
@@ -123,7 +125,7 @@ export function HomeScreen({
                         : "bg-card/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                   >
-                    {mode === "ssc-dest" ? "SSC DEST" : mode}
+                    {mode}
                   </button>
                 ))}
               </div>
@@ -137,7 +139,8 @@ export function HomeScreen({
                     <label className="text-sm font-medium text-foreground">Words (1–2000)</label>
                     <input
                       type="number" min={1} max={2000} value={wordCount}
-                      onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) handleWordChange(v); }}
+                      ref={targetInputRef}
+                      onChange={(e) => handleWordChange(Number(e.target.value))}
                       className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
                     />
                   </div>
@@ -156,7 +159,8 @@ export function HomeScreen({
                     <label className="text-sm font-medium text-foreground">Keystrokes (5–10000)</label>
                     <input
                       type="number" min={5} max={10000} value={keystrokeCount}
-                      onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) handleKeystrokeChange(v); }}
+                      ref={targetInputRef}
+                      onChange={(e) => handleKeystrokeChange(Number(e.target.value))}
                       className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
                     />
                   </div>
@@ -195,18 +199,12 @@ export function HomeScreen({
               </div>
             )}
 
-            {inputMode === "ssc-dest" && (
-              <p className="rounded-xl bg-primary/10 px-3 py-2 text-sm text-muted-foreground">
-                SSC DEST practice profile: 2,000 passage characters and a fixed 15-minute session.
-              </p>
-            )}
 
             {/* Duration - Manual Input */}
             <div className="flex justify-center space-y-0 space-x-20">
-              <label className="text-sm font-medium text-foreground ">{inputMode === "ssc-dest" ? "Duration (SSC DEST)" : "Duration (1–20 minutes)"}</label>
+              <label className="text-sm font-medium text-foreground ">Duration (1–20 minutes)</label>
               <input
-                type="number" min={1} max={20}                 value={inputMode === "ssc-dest" ? 15 : duration}
-                disabled={inputMode === "ssc-dest"}
+                type="number" min={1} max={20} value={duration}
                 onChange={(e) => {
                   const v = parseInt(e.target.value, 10);
                   if (!isNaN(v)) setDuration(Math.min(20, Math.max(1, v)));
@@ -215,11 +213,26 @@ export function HomeScreen({
               />
             </div>
 <div className="flex justify-center w-full">
-            <Button onClick={onStart} className="w-fit mx-auto px-8 py-2 shadow-sm rounded-xl" size="default">
+            <Button onClick={() => {
+              const target = inputMode === "words" ? wordCount : inputMode === "keystrokes" ? keystrokeCount : 1;
+              if (!Number.isInteger(target) || target <= 0) {
+                setValidationOpen(true);
+                return;
+              }
+              onStart();
+            }} className="w-fit mx-auto px-8 py-2 shadow-sm rounded-xl" size="default">
               <FileText className="h-4 w-4 mr-2" />
               Start Typing Test
             </Button></div>
           </div>
+          {validationOpen && (
+            <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-xl">
+                <p className="text-sm text-foreground">Please choose a word or keystroke target greater than 0.</p>
+                <Button className="mt-4 w-full" onClick={() => { setValidationOpen(false); targetInputRef.current?.focus(); }}>OK</Button>
+              </div>
+            </div>
+          )}
 
           <p className="text-center text-xs text-muted-foreground">
             Default: 50 words · 250 keystrokes · 10 minutes

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildExactCharacterPassage, calculateTypingStats, classifyMistakes, countWords } from "@/lib/typing";
+import { buildExactCharacterPassage, calculateTypingStats, countWords } from "@/lib/typing";
 
 describe("typing calculations", () => {
   it("builds an exact character target", () => {
@@ -15,6 +15,18 @@ describe("typing calculations", () => {
     expect(stats.netWpm).toBe(38);
   });
 
+  it("counts incorrect printable input toward gross speed", () => {
+    const stats = calculateTypingStats("a".repeat(300), "b".repeat(200), 60);
+    expect(stats.grossWpm).toBe(40);
+    expect(stats.netWpm).toBe(0);
+  });
+
+  it("aligns insertions without shifting all following matches", () => {
+    const stats = calculateTypingStats("abcd", "axbcd", 60);
+    expect(stats.correctCharacters).toBe(4);
+    expect(stats.accuracy).toBe(80);
+  });
+
   it("guards zero elapsed time", () => {
     const stats = calculateTypingStats("abc", "abc", 0);
     expect(stats.grossWpm).toBe(0);
@@ -22,9 +34,4 @@ describe("typing calculations", () => {
     expect(Number.isFinite(stats.accuracy)).toBe(true);
   });
 
-  it("applies full and half mistake categories", () => {
-    const mistakes = classifyMistakes("alpha beta gamma delta", "alpha betta gamma extra");
-    expect(mistakes.halfMistakes).toBe(1);
-    expect(mistakes.fullMistakes).toBe(1);
-  });
 });

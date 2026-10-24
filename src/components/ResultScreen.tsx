@@ -7,8 +7,6 @@ interface ResultScreenProps {
   grossWpm: number;
   accuracy: number;
   errorCount: number;
-  halfMistakes: number;
-  fullMistakes: number;
   duration: number;
   timeLeft: number;
   text: string;
@@ -18,7 +16,7 @@ interface ResultScreenProps {
 }
 
 export function ResultScreen({
-  wpm, grossWpm, accuracy, errorCount, halfMistakes, fullMistakes,
+  wpm, grossWpm, accuracy, errorCount,
   duration, timeLeft, text, userInput, onHome, onRestart,
 }: ResultScreenProps) {
   const timeTaken = duration * 60 - timeLeft;
@@ -47,18 +45,10 @@ export function ResultScreen({
           </div>
 
           <div className="rounded-lg border border-border bg-card p-4">
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-1 gap-3 text-center">
               <div>
                 <div className="text-lg font-semibold text-error tabular-nums">{errorCount}</div>
-                <div className="text-xs text-muted-foreground">Total Errors</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-foreground tabular-nums">{halfMistakes}</div>
-                <div className="text-xs text-muted-foreground">Half Mistakes</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-foreground tabular-nums">{fullMistakes}</div>
-                <div className="text-xs text-muted-foreground">Full Mistakes</div>
+                <div className="text-xs text-muted-foreground">Incorrect characters</div>
               </div>
             </div>
           </div>

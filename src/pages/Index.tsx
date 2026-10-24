@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 const Index = () => {
   const engine = useTypingEngine();
-  const { soundEnabled, setSoundEnabled, playKeypressSound } = useTypingSound();
+  const { soundEnabled, setSoundEnabled, playKeypressSound, playBackspaceSound, volume, profile, backspaceEnabled, setVolume, setProfile, setBackspaceEnabled, playPreview } = useTypingSound();
   const { isDark, toggleTheme } = useTheme();
   const { history, personalBest, addResult } = useHistory();
   
@@ -18,10 +18,11 @@ const Index = () => {
 
   useEffect(() => {
     if (engine.screen === "typing" && engine.userInput.length !== prevInputLenRef.current) {
-      playKeypressSound();
+      if (engine.userInput.length > prevInputLenRef.current) playKeypressSound();
+      else playBackspaceSound();
     }
     prevInputLenRef.current = engine.userInput.length;
-  }, [engine.userInput, engine.screen, playKeypressSound]);
+  }, [engine.userInput, engine.screen, playKeypressSound, playBackspaceSound]);
 
   // Save result when reaching result screen
   useEffect(() => {
@@ -38,7 +39,7 @@ const Index = () => {
     return (
       <ResultScreen
         wpm={engine.wpm} grossWpm={engine.grossWpm} accuracy={engine.accuracy}
-        errorCount={engine.errorCount} halfMistakes={engine.halfMistakes} fullMistakes={engine.fullMistakes}
+        errorCount={engine.errorCount}
         duration={engine.duration} timeLeft={engine.timeLeft} text={engine.text} userInput={engine.userInput}
         onHome={engine.goHome} onRestart={engine.startTest}
       />
@@ -51,6 +52,9 @@ const Index = () => {
         text={engine.text} userInput={engine.userInput} currentIndex={engine.currentIndex}
         timeLeft={engine.timeLeft} wpm={engine.wpm} accuracy={engine.accuracy} isRunning={engine.isRunning}
         soundEnabled={soundEnabled} onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        volume={volume} profile={profile} backspaceEnabled={backspaceEnabled}
+        onVolumeChange={setVolume} onProfileChange={setProfile}
+        onBackspaceSoundChange={setBackspaceEnabled} onPreviewSound={playPreview}
         onInput={engine.handleInput} onHome={engine.goHome} onSubmit={engine.finishTest}
         isDark={isDark} onToggleTheme={toggleTheme} personalBest={personalBest}
       />

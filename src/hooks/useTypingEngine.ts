@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateExactCharacterParagraph, generateParagraph, getParagraphById } from "@/lib/paragraphs";
-import { calculateTypingStats, classifyMistakes } from "@/lib/typing";
+import { calculateTypingStats } from "@/lib/typing";
 
-export type InputMode = "words" | "keystrokes" | "paragraph" | "ssc-dest";
+export type InputMode = "words" | "keystrokes" | "paragraph";
 
 export interface TypingEngineReturn {
   text: string; userInput: string; currentIndex: number; isRunning: boolean; isFinished: boolean;
   timeLeft: number; duration: number; wpm: number; grossWpm: number; accuracy: number;
-  errorCount: number; halfMistakes: number; fullMistakes: number; wordCount: number;
+  errorCount: number; wordCount: number;
   keystrokeCount: number; screen: "home" | "typing" | "result"; inputMode: InputMode;
   selectedParagraphId: number; customParagraph: string; setWordCount: (n: number) => void;
   setKeystrokeCount: (n: number) => void; setDuration: (d: number) => void;
@@ -33,8 +33,6 @@ export function useTypingEngine(): TypingEngineReturn {
   const [grossWpm, setGrossWpm] = useState(0);
   const [accuracy, setAccuracy] = useState(100);
   const [errorCount, setErrorCount] = useState(0);
-  const [halfMistakes, setHalfMistakes] = useState(0);
-  const [fullMistakes, setFullMistakes] = useState(0);
   const [screen, setScreen] = useState<"home" | "typing" | "result">("home");
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -60,9 +58,7 @@ export function useTypingEngine(): TypingEngineReturn {
     clearTimer();
     const elapsed = startTimeRef.current ? Math.min(durationRef.current * 60, (Date.now() - startTimeRef.current) / 1000) : 0;
     const stats = updateStats(inputRef.current, elapsed);
-    const mistakes = classifyMistakes(textRef.current, inputRef.current);
-    setErrorCount(mistakes.halfMistakes + mistakes.fullMistakes);
-    setHalfMistakes(mistakes.halfMistakes); setFullMistakes(mistakes.fullMistakes);
+    setErrorCount(stats.incorrectCharacters);
     setTimeLeft(Math.max(0, Math.ceil(durationRef.current * 60 - elapsed)));
     setIsRunning(false); setIsFinished(true); setScreen("result");
   }, [clearTimer, screen, updateStats]);
@@ -83,10 +79,10 @@ export function useTypingEngine(): TypingEngineReturn {
   const startTest = useCallback(() => {
     const newText = inputMode === "paragraph"
       ? (customParagraph.trim() || getParagraphById(selectedParagraphId)).trim()
-      : inputMode === "keystrokes" || inputMode === "ssc-dest"
-        ? generateExactCharacterParagraph(inputMode === "ssc-dest" ? 2000 : keystrokeCount)
+      : inputMode === "keystrokes"
+        ? generateExactCharacterParagraph(keystrokeCount)
         : generateParagraph(wordCount);
-    durationRef.current = inputMode === "ssc-dest" ? 15 : duration;
+    durationRef.current = duration;
     textRef.current = newText; inputRef.current = ""; startTimeRef.current = null;
     setText(newText); setUserInput(""); setCurrentIndex(0); setTimeLeft(durationRef.current * 60);
     setWpm(0); setGrossWpm(0); setAccuracy(100); setErrorCount(0); setHalfMistakes(0); setFullMistakes(0);
@@ -105,16 +101,16 @@ export function useTypingEngine(): TypingEngineReturn {
   const goHome = useCallback(() => {
     clearTimer(); textRef.current = ""; inputRef.current = ""; startTimeRef.current = null;
     setIsRunning(false); setIsFinished(false); setUserInput(""); setCurrentIndex(0);
-    setWpm(0); setGrossWpm(0); setAccuracy(100); setErrorCount(0); setHalfMistakes(0); setFullMistakes(0); setScreen("home");
+    setWpm(0); setGrossWpm(0); setAccuracy(100); setErrorCount(0); setScreen("home");
   }, [clearTimer]);
 
   useEffect(() => () => clearTimer(), [clearTimer]);
 
   return {
-    text, userInput, currentIndex, isRunning, isFinished, timeLeft, duration: inputMode === "ssc-dest" ? 15 : duration, wpm, grossWpm, accuracy,
-    errorCount, halfMistakes, fullMistakes, wordCount, keystrokeCount, screen, inputMode,
-    selectedParagraphId, customParagraph, setWordCount: (n) => setWordCountState(Math.max(1, Math.min(2000, Math.floor(n) || 1))),
-    setKeystrokeCount: (n) => setKeystrokeCountState(Math.max(5, Math.min(10000, Math.floor(n) || 5))),
+    text, userInput, currentIndex, isRunning, isFinished, timeLeft, duration, wpm, grossWpm, accuracy,
+    errorCount, wordCount, keystrokeCount, screen, inputMode,
+    selectedParagraphId, customParagraph, setWordCount: (n) => setWordCountState(Math.min(2000, Math.max(0, Math.floor(n) || 0))),
+    setKeystrokeCount: (n) => setKeystrokeCountState(Math.min(10000, Math.max(0, Math.floor(n) || 0))),
     setDuration: (n) => setDurationState(Math.max(1, Math.min(20, Math.floor(n) || 1))),
     setInputMode, setSelectedParagraphId, setCustomParagraph, startTest, handleInput, goHome, finishTest,
   };
