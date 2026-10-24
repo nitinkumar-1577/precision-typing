@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PersonalBestBadge } from "@/components/PersonalBestBadge";
 import { HistoryTable } from "@/components/HistoryTable";
 import type { TestResult } from "@/hooks/useHistory";
+import { useEffect, useState } from "react";
 
 interface HomeScreenProps {
   wordCount: number;
@@ -47,17 +48,31 @@ export function HomeScreen({
   history,
 }: HomeScreenProps) {
   const paragraphCount = getParagraphCount();
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const onPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+  }, []);
+
+  const install = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    setInstallPrompt(null);
+  };
 
   const handleWordChange = (val: number) => {
     const clamped = Math.min(2000, Math.max(1, val));
     setWordCount(clamped);
-    setKeystrokeCount(clamped * 5);
   };
 
   const handleKeystrokeChange = (val: number) => {
     const clamped = Math.min(10000, Math.max(5, val));
     setKeystrokeCount(clamped);
-    setWordCount(Math.ceil(clamped / 5));
   };
 
   return (
@@ -71,7 +86,10 @@ export function HomeScreen({
       {/* Top bar */}
       <div className="relative z-10 flex w-full max-w-5xl items-center justify-between mb-4 pt-2">
         <PersonalBestBadge wpm={personalBest} />
-        <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
+        <div className="flex items-center gap-2">
+          {installPrompt && <button onClick={install} className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:bg-secondary">Install app</button>}
+          <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
+        </div>
       </div>
 
       <div className="relative z-10 flex flex-1 items-center justify-center w-full">
@@ -95,7 +113,7 @@ export function HomeScreen({
                 <Type className="h-3.5 w-3.5" /> Mode
               </label>
               <div className="flex rounded-xl border border-border/50 overflow-hidden">
-                {(["words", "keystrokes", "paragraph"] as InputMode[]).map((mode) => (
+                {(["words", "keystrokes", "paragraph", "ssc-dest"] as InputMode[]).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setInputMode(mode)}
@@ -105,7 +123,7 @@ export function HomeScreen({
                         : "bg-card/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                   >
-                    {mode}
+                    {mode === "ssc-dest" ? "SSC DEST" : mode}
                   </button>
                 ))}
               </div>
@@ -119,17 +137,12 @@ export function HomeScreen({
                     <label className="text-sm font-medium text-foreground">Words (1–2000)</label>
                     <input
                       type="number" min={1} max={2000} value={wordCount}
-                      onChange={(e) => { const v = parseInt(e.target.value);  handleWordChange(v); }}
+                      onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) handleWordChange(v); }}
                       className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-foreground">Keystrokes</label>
-                    <input
-                      type="number" min={5} max={10000} value={keystrokeCount}
-                      onChange={(e) => { const v = parseInt(e.target.value);  handleKeystrokeChange(v); }}
-                      className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                    />
+                    <p className="text-xs text-muted-foreground pt-2">Reference size: {keystrokeCount} estimated characters</p>
                   </div>
                 </div>
               </div>
@@ -143,17 +156,12 @@ export function HomeScreen({
                     <label className="text-sm font-medium text-foreground">Keystrokes (5–10000)</label>
                     <input
                       type="number" min={5} max={10000} value={keystrokeCount}
-                      onChange={(e) => { const v = parseInt(e.target.value); handleKeystrokeChange(v); }}
+                      onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) handleKeystrokeChange(v); }}
                       className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-foreground">Words</label>
-                    <input
-                      type="number" min={1} max={2000} value={wordCount}
-                      onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v)) handleWordChange(v); }}
-                      className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                    />
+                    <p className="text-xs text-muted-foreground pt-2">Word target is independent of character count</p>
                   </div>
                 </div>
               </div>
@@ -187,14 +195,21 @@ export function HomeScreen({
               </div>
             )}
 
+            {inputMode === "ssc-dest" && (
+              <p className="rounded-xl bg-primary/10 px-3 py-2 text-sm text-muted-foreground">
+                SSC DEST practice profile: 2,000 passage characters and a fixed 15-minute session.
+              </p>
+            )}
+
             {/* Duration - Manual Input */}
             <div className="flex justify-center space-y-0 space-x-20">
-              <label className="text-sm font-medium text-foreground ">Duration (1–20 minutes)</label>
+              <label className="text-sm font-medium text-foreground ">{inputMode === "ssc-dest" ? "Duration (SSC DEST)" : "Duration (1–20 minutes)"}</label>
               <input
-                type="number" min={1} max={20} value={duration}
+                type="number" min={1} max={20}                 value={inputMode === "ssc-dest" ? 15 : duration}
+                disabled={inputMode === "ssc-dest"}
                 onChange={(e) => {
-                  const v = parseInt(e.target.value);
-                 setDuration(Math.min(20, Math.max(1, v)));
+                  const v = parseInt(e.target.value, 10);
+                  if (!isNaN(v)) setDuration(Math.min(20, Math.max(1, v)));
                 }}
                 className="w-full rounded-xl border border-input bg-background/80 px-5 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
               />
@@ -216,4 +231,8 @@ export function HomeScreen({
       </div>
     </div>
   );
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
 }

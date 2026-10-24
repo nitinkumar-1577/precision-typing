@@ -13,7 +13,7 @@ interface TypingScreenProps {
   isRunning: boolean;
   soundEnabled: boolean;
   onToggleSound: () => void;
-  onInput: (value: string) => void;
+  onInput: (value: string, selectionStart?: number) => void;
   onHome: () => void;
   onSubmit: () => void;
   isDark: boolean;
@@ -117,12 +117,15 @@ export function TypingScreen({
           <textarea
             ref={textareaRef}
             value={userInput}
-            onChange={(e) => onInput(e.target.value)}
+            onChange={(e) => onInput(e.target.value, e.target.selectionStart ?? e.target.value.length)}
+            onSelect={(e) => onInput(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
             onKeyDown={(e) => { if (e.key === "Tab") e.preventDefault(); }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className="absolute -left-[9999px] h-0 w-0 opacity-0"
-            autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+            className="min-h-28 w-full resize-y rounded-lg border border-border bg-card p-4 font-mono text-base leading-8 text-foreground outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Start typing here..."
+            aria-label="Typing input"
+            autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false}
           />
         </div>
       </div>

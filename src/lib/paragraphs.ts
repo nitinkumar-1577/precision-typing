@@ -126,6 +126,13 @@ export function generateParagraph(wordCount: number): string {
   return words.slice(0, wordCount).join(" ");
 }
 
+export function generateExactCharacterParagraph(characterCount: number): string {
+  const source = paragraphs.join(" ");
+  const target = Math.max(1, Math.floor(characterCount));
+  if (source.length >= target) return source.slice(0, target);
+  return (source + " ").repeat(Math.ceil(target / (source.length + 1))).slice(0, target);
+}
+
 export function getParagraphById(id: number): string {
   const index = Math.max(0, Math.min(id - 1, paragraphs.length - 1));
   return paragraphs[index];

@@ -21,7 +21,9 @@ export function useTypingSound() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
       oscillator.start(ctx.currentTime);
       oscillator.stop(ctx.currentTime + 0.05);
-    } catch {}
+    } catch {
+      // Audio is optional and may be unavailable until a user gesture.
+    }
   }, [soundEnabled]);
 
   return { soundEnabled, setSoundEnabled, playKeypressSound };
