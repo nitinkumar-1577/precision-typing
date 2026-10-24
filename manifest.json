@@ -1,0 +1,23 @@
+-{
+  "name": "Precision Typing",
+  "short_name": "Precision Typing",
+  "description": "Build typing speed and exam-ready accuracy.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf9fc",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
