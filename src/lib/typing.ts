@@ -58,6 +58,23 @@ export function alignCharacters(reference: string, input: string): {
   comparisonCount: number;
   referenceStates: Array<"correct" | "incorrect" | "pending">;
 } {
+  if (reference.length > 1200 || input.length > 1200) {
+    const states = Array<"correct" | "incorrect" | "pending">(reference.length).fill("pending");
+    let correctCharacters = 0;
+    const limit = Math.min(reference.length, input.length);
+    for (let index = 0; index < limit; index += 1) {
+      states[index] = reference[index] === input[index] ? "correct" : "incorrect";
+      if (states[index] === "correct") correctCharacters += 1;
+    }
+    for (let index = limit; index < input.length; index += 1) {
+      if (index < reference.length) states[index] = "incorrect";
+    }
+    return {
+      correctCharacters,
+      comparisonCount: Math.max(reference.length, input.length),
+      referenceStates: states,
+    };
+  }
   const rows = reference.length + 1;
   const cols = input.length + 1;
   const costs = Array.from({ length: rows }, (_, row) => Array.from({ length: cols }, (_, col) => row + col));

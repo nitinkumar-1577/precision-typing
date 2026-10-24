@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useLayoutEffect, memo } from "react";
+import { useRef, useEffect, useState, useLayoutEffect, useMemo, memo } from "react";
 import { Home, Volume2, VolumeX } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PersonalBestBadge } from "@/components/PersonalBestBadge";
@@ -55,13 +55,6 @@ export function TypingScreen({
 
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
-  useEffect(() => {
-    if (textDisplayRef.current) {
-      const el = textDisplayRef.current.querySelector('[data-current="true"]');
-      if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
-    }
-  }, [currentIndex]);
-
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -71,7 +64,12 @@ export function TypingScreen({
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const referenceStates = alignCharacters(text, userInput).referenceStates;
+  const referenceStates = useMemo(() => alignCharacters(text, userInput).referenceStates, [text, userInput]);
+  const renderedText = useMemo(() => text.split("").map((char, i) => {
+    let state: "correct" | "incorrect" | "pending" | "current" = referenceStates[i] || "pending";
+    if (i === currentIndex) state = "current";
+    return <CharSpan key={i} char={char} state={state} />;
+  }), [text, referenceStates, currentIndex]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -130,11 +128,7 @@ export function TypingScreen({
             className="relative mb-4 max-h-[55vh] overflow-y-auto rounded-lg border border-border bg-card p-4 sm:p-6 font-mono text-base leading-8 cursor-text select-none"
             onClick={() => textareaRef.current?.focus()}
           >
-            {text.split("").map((char, i) => {
-              let state: "correct" | "incorrect" | "pending" | "current" = referenceStates[i] || "pending";
-              if (i === currentIndex) state = "current";
-              return <CharSpan key={i} char={char} state={state} />;
-            })}
+            {renderedText}
           </div>
 
           <div className="flex justify-center">
@@ -151,7 +145,7 @@ export function TypingScreen({
             onKeyDown={(e) => { if (e.key === "Tab") e.preventDefault(); }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className="min-h-28 max-h-[45vh] w-full resize-none overflow-y-auto rounded-lg border border-border bg-card p-4 font-mono text-base leading-8 text-foreground outline-none focus:ring-2 focus:ring-ring"
+            className="mt-2 min-h-16 max-h-28 w-full resize-none overflow-y-auto rounded-lg border border-border bg-background/50 p-3 font-mono text-sm leading-6 text-foreground outline-none focus:ring-2 focus:ring-ring"
             placeholder="Start typing here..."
             aria-label="Typing input"
             autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false}
