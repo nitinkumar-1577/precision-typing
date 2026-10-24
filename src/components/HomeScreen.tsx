@@ -79,6 +79,23 @@ export function HomeScreen({
     setKeystrokeCount(clamped);
   };
 
+  const updateTargetText = (
+    raw: string,
+    maximum: number,
+    setText: (value: string) => void,
+    updateValue: (value: number) => void,
+  ) => {
+    if (raw === "") {
+      setText("");
+      return;
+    }
+    const parsed = Number(raw);
+    if (!Number.isInteger(parsed)) return;
+    const bounded = Math.min(maximum, Math.max(0, parsed));
+    setText(String(bounded));
+    updateValue(bounded);
+  };
+
   return (
     <div className="relative flex min-h-screen flex-col items-center bg-background p-4 overflow-hidden">
       {/* Background decorations */}
@@ -143,11 +160,7 @@ export function HomeScreen({
                       type="number" min={1} max={2000}
                       ref={targetInputRef}
                       value={wordTargetText}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        setWordTargetText(raw);
-                        if (raw !== "") handleWordChange(Number(raw));
-                      }}
+                      onChange={(e) => updateTargetText(e.target.value, 2000, setWordTargetText, handleWordChange)}
                       className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
                     />
                   </div>
@@ -163,15 +176,11 @@ export function HomeScreen({
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-foreground">Keystrokes (5–10000)</label>
+                    <label className="text-sm font-medium text-foreground">Keystrokes (1–10000)</label>
                     <input
                       type="number" min={1} max={10000} value={keystrokeTargetText}
                       ref={targetInputRef}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        setKeystrokeTargetText(raw);
-                        if (raw !== "") handleKeystrokeChange(Number(raw));
-                      }}
+                      onChange={(e) => updateTargetText(e.target.value, 10000, setKeystrokeTargetText, handleKeystrokeChange)}
                       className="w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring transition-shadow"
                     />
                   </div>
