@@ -5,7 +5,7 @@ import { useHistory } from "@/hooks/useHistory";
 import { HomeScreen } from "@/components/HomeScreen";
 import { TypingScreen } from "@/components/TypingScreen";
 import { ResultScreen } from "@/components/ResultScreen";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 const Index = () => {
   const engine = useTypingEngine();
@@ -13,16 +13,28 @@ const Index = () => {
   const { isDark, toggleTheme } = useTheme();
   const { history, personalBest, addResult } = useHistory();
   
-  const prevInputLenRef = useRef(0);
   const resultSavedRef = useRef(false);
+  const lastSoundInputRef = useRef(engine.userInput);
 
   useEffect(() => {
-    if (engine.screen === "typing" && engine.userInput.length !== prevInputLenRef.current) {
-      if (engine.userInput.length > prevInputLenRef.current) playKeypressSound();
-      else playBackspaceSound();
+    if (engine.screen !== "typing") lastSoundInputRef.current = engine.userInput;
+  }, [engine.screen, engine.userInput]);
+
+  const handleInput = (value: string, selectionStart?: number) => {
+    const previousValue = lastSoundInputRef.current;
+    engine.handleInput(value, selectionStart);
+    if (engine.screen !== "typing" || value === previousValue) return;
+    lastSoundInputRef.current = value;
+    if (value.length < previousValue.length) {
+      playBackspaceSound();
+      return;
     }
-    prevInputLenRef.current = engine.userInput.length;
-  }, [engine.userInput, engine.screen, playKeypressSound, playBackspaceSound]);
+
+    const insertedCharacter = value.length === previousValue.length + 1
+      ? value[selectionStart === undefined ? value.length - 1 : Math.max(0, selectionStart - 1)]
+      : undefined;
+    playKeypressSound(insertedCharacter === " " ? "space" : insertedCharacter === "\n" ? "enter" : "keypress");
+  };
 
   // Save result when reaching result screen
   useEffect(() => {
@@ -55,7 +67,7 @@ const Index = () => {
         volume={volume} profile={profile} backspaceEnabled={backspaceEnabled}
         onVolumeChange={setVolume} onProfileChange={setProfile}
         onBackspaceSoundChange={setBackspaceEnabled} onPreviewSound={playPreview}
-        onInput={engine.handleInput} onHome={engine.goHome} onSubmit={engine.finishTest}
+        onInput={handleInput} onHome={engine.goHome} onSubmit={engine.finishTest}
         isDark={isDark} onToggleTheme={toggleTheme} personalBest={personalBest}
       />
     );

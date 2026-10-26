@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useLayoutEffect, useMemo, memo } from "react";
+import { useRef, useEffect, useState, useMemo, memo } from "react";
 import { Home, Volume2, VolumeX } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PersonalBestBadge } from "@/components/PersonalBestBadge";
@@ -54,12 +54,34 @@ export function TypingScreen({
 
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, window.innerHeight * 0.45)}px`;
+    const frame = requestAnimationFrame(() => {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, window.innerHeight * 0.45)}px`;
+    });
+    return () => cancelAnimationFrame(frame);
   }, [userInput]);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const container = textDisplayRef.current;
+      const currentCharacter = container?.querySelector<HTMLElement>(`[data-typing-index="${currentIndex}"]`);
+      if (!container || !currentCharacter) return;
+
+      const characterTop = currentCharacter.offsetTop;
+      const characterBottom = characterTop + currentCharacter.offsetHeight;
+      const visibleTop = container.scrollTop;
+      const visibleBottom = visibleTop + container.clientHeight;
+      if (characterBottom > visibleBottom) {
+        container.scrollTop = characterBottom - container.clientHeight;
+      } else if (characterTop < visibleTop) {
+        container.scrollTop = characterTop;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [currentIndex, text]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -74,7 +96,7 @@ export function TypingScreen({
         state = userInput[index] === char ? "correct" : "incorrect";
       }
     }
-    return <CharSpan key={index} char={char} state={state} />;
+    return <span key={index} data-typing-index={index}><CharSpan char={char} state={state} /></span>;
   }), [text, userInput, currentIndex]);
 
   return (
@@ -131,7 +153,7 @@ export function TypingScreen({
 
           <div
             ref={textDisplayRef}
-            className="relative mb-4 max-h-[55vh] overflow-y-auto rounded-lg border border-border bg-card p-4 sm:p-6 font-mono text-base leading-8 cursor-text select-none"
+            className="relative mb-4 max-h-[calc(100dvh-18rem)] overflow-y-auto rounded-lg border border-border bg-card p-3 font-mono text-base leading-8 text-justify cursor-text select-none"
             onClick={() => textareaRef.current?.focus()}
           >
             {renderedText}
@@ -147,7 +169,6 @@ export function TypingScreen({
             ref={textareaRef}
             value={userInput}
             onChange={(e) => onInput(e.target.value, e.target.selectionStart ?? e.target.value.length)}
-            onSelect={(e) => onInput(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
             onKeyDown={(e) => { if (e.key === "Tab") e.preventDefault(); }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}

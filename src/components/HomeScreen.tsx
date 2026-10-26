@@ -166,7 +166,9 @@ export function HomeScreen({
                     />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground pt-2">Reference size: {keystrokeCount} estimated characters</p>
+                    <p className="mt-1 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium text-primary">
+                      Reference size: {Math.max(0, Number(wordTargetText) || 0) * 5} characters
+                    </p>
                   </div>
                 </div>
               </div>
@@ -186,9 +188,8 @@ export function HomeScreen({
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-foreground">Equivalent words</label>
-                    <p className="rounded-xl border border-input bg-background/50 px-3 py-2 text-sm text-muted-foreground">
-                      {Math.ceil(keystrokeCount / 5)} words (5 characters per word)
+                    <p className="mt-1 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium text-primary">
+                      Reference size: {Math.ceil((Math.max(0, Number(keystrokeTargetText) || 0)) / 5)} words
                     </p>
                   </div>
                 </div>

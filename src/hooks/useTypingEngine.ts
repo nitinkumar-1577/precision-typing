@@ -41,6 +41,8 @@ export function useTypingEngine(): TypingEngineReturn {
   const startTimeRef = useRef<number | null>(null);
   const durationRef = useRef(duration);
   const finishRef = useRef<() => void>(() => undefined);
+  const statsFrameRef = useRef<number | null>(null);
+  const pendingStatsRef = useRef<{ input: string; elapsed: number } | null>(null);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -53,9 +55,25 @@ export function useTypingEngine(): TypingEngineReturn {
     return stats;
   }, []);
 
+  const scheduleStatsUpdate = useCallback((input: string, elapsedSeconds: number) => {
+    pendingStatsRef.current = { input, elapsed: elapsedSeconds };
+    if (statsFrameRef.current !== null) return;
+    statsFrameRef.current = requestAnimationFrame(() => {
+      statsFrameRef.current = null;
+      const pending = pendingStatsRef.current;
+      pendingStatsRef.current = null;
+      if (pending) updateStats(pending.input, pending.elapsed);
+    });
+  }, [updateStats]);
+
   const finishTest = useCallback(() => {
     if (screen === "result" || !textRef.current) return;
     clearTimer();
+    if (statsFrameRef.current !== null) {
+      cancelAnimationFrame(statsFrameRef.current);
+      statsFrameRef.current = null;
+      pendingStatsRef.current = null;
+    }
     const elapsed = startTimeRef.current ? Math.min(durationRef.current * 60, (Date.now() - startTimeRef.current) / 1000) : 0;
     const stats = updateStats(inputRef.current, elapsed);
     setErrorCount(stats.incorrectCharacters);
@@ -72,9 +90,9 @@ export function useTypingEngine(): TypingEngineReturn {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       const remaining = durationRef.current * 60 - elapsed;
       if (remaining <= 0) finishRef.current();
-      else { setTimeLeft(Math.ceil(remaining)); updateStats(inputRef.current, elapsed); }
+      else { setTimeLeft(Math.ceil(remaining)); scheduleStatsUpdate(inputRef.current, elapsed); }
     }, 250);
-  }, [clearTimer, updateStats]);
+  }, [clearTimer, scheduleStatsUpdate]);
 
   const startTest = useCallback(() => {
     const newText = inputMode === "paragraph"
@@ -94,9 +112,9 @@ export function useTypingEngine(): TypingEngineReturn {
     inputRef.current = value; setUserInput(value);
     setCurrentIndex(selectionStart ?? value.length);
     if (!startTimeRef.current && value.length > 0) { startTimeRef.current = Date.now(); setIsRunning(true); startTimer(); }
-    if (startTimeRef.current) updateStats(value, (Date.now() - startTimeRef.current) / 1000);
-    if (value.length >= textRef.current.length && value === textRef.current) finishTest();
-  }, [finishTest, isFinished, screen, startTimer, updateStats]);
+    if (startTimeRef.current) scheduleStatsUpdate(value, (Date.now() - startTimeRef.current) / 1000);
+    if (value.length >= textRef.current.length) finishTest();
+  }, [finishTest, isFinished, screen, startTimer, scheduleStatsUpdate]);
 
   const goHome = useCallback(() => {
     clearTimer(); textRef.current = ""; inputRef.current = ""; startTimeRef.current = null;
@@ -104,7 +122,10 @@ export function useTypingEngine(): TypingEngineReturn {
     setWpm(0); setGrossWpm(0); setAccuracy(100); setErrorCount(0); setScreen("home");
   }, [clearTimer]);
 
-  useEffect(() => () => clearTimer(), [clearTimer]);
+  useEffect(() => () => {
+    clearTimer();
+    if (statsFrameRef.current !== null) cancelAnimationFrame(statsFrameRef.current);
+  }, [clearTimer]);
 
   return {
     text, userInput, currentIndex, isRunning, isFinished, timeLeft, duration, wpm, grossWpm, accuracy,
