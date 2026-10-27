@@ -108,26 +108,39 @@ const paragraphs: string[] = [
   "The psychology of learning explores how individuals acquire process store and retrieve information and how these processes can be optimized to enhance educational outcomes. Learning theories including behaviorism cognitivism constructivism and connectivism provide different perspectives on how learning occurs. Behaviorist theories focus on observable behaviors and the role of reinforcement and punishment in shaping learning. Cognitive theories emphasize the internal mental processes involved in learning including attention memory and problem-solving. Constructivist theories suggest that learners actively construct knowledge through their experiences and interactions with the environment. Connectivism a relatively new theory proposes that learning occurs through networks of connections between information sources. Understanding different learning styles and preferences can help educators design more effective instruction. Research has shown that active learning strategies such as collaborative learning project-based learning and problem-based learning tend to be more effective than passive approaches such as lecture-based instruction. The spacing effect which demonstrates that distributed practice over time leads to better retention than massed practice has important implications for study habits and curriculum design. Metacognition the ability to reflect on and regulate ones own learning processes is a powerful tool for improving academic performance. Motivation both intrinsic and extrinsic plays a critical role in learning with engaged and motivated students demonstrating better outcomes. The integration of technology in education offers new opportunities for personalized and adaptive learning experiences. Understanding the neuroscience of learning including how the brain processes and stores information is informing new approaches to teaching and curriculum design.",
 ];
 
+let lastParagraphIndex = -1;
+
+function getRandomParagraphOrder(): string[] {
+  const order = paragraphs.map((_, index) => index);
+  for (let index = order.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [order[index], order[swapIndex]] = [order[swapIndex], order[index]];
+  }
+
+  if (order.length > 1 && order[0] === lastParagraphIndex) {
+    [order[0], order[1]] = [order[1], order[0]];
+  }
+  lastParagraphIndex = order[0] ?? -1;
+  return order.map((index) => paragraphs[index]);
+}
+
 export function generateParagraph(wordCount: number): string {
   const words: string[] = [];
-  let attempts = 0;
+  const paragraphOrder = getRandomParagraphOrder();
 
-  while (words.length < wordCount && attempts < 200) {
-    const randomParagraph = paragraphs[Math.floor(Math.random() * paragraphs.length)];
-    const paragraphWords = randomParagraph.split(/\s+/);
-
-    for (const word of paragraphWords) {
+  for (const paragraph of paragraphOrder) {
+    for (const word of paragraph.split(/\s+/)) {
       if (words.length >= wordCount) break;
       words.push(word);
     }
-    attempts++;
+    if (words.length >= wordCount) break;
   }
 
   return words.slice(0, wordCount).join(" ");
 }
 
 export function generateExactCharacterParagraph(characterCount: number): string {
-  const source = paragraphs.join(" ");
+  const source = getRandomParagraphOrder().join(" ");
   const target = Math.max(1, Math.floor(characterCount));
   if (source.length >= target) return source.slice(0, target);
   return (source + " ").repeat(Math.ceil(target / (source.length + 1))).slice(0, target);

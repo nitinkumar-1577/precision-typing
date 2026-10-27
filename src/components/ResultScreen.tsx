@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, ClipboardList, Download, Home, Printer, RotateCcw, Target, Timer, Trophy } from "lucide-react";
 import { useMemo } from "react";
-import { calculateTypingStats, countWords } from "@/lib/typing";
+import { calculateMistakeStats, calculateTypingStats, countWords } from "@/lib/typing";
 import type { ReactNode } from "react";
 
 interface ResultScreenProps {
@@ -25,6 +25,7 @@ export function ResultScreen({
   const minutesTaken = Math.floor(timeTaken / 60);
   const secondsTaken = timeTaken % 60;
   const stats = useMemo(() => calculateTypingStats(text, userInput, timeTaken), [text, userInput, timeTaken]);
+  const mistakeStats = useMemo(() => calculateMistakeStats(text, userInput), [text, userInput]);
   const comparison = useMemo(() => {
     const items: ComparisonItem[] = [];
     const length = Math.max(text.length, userInput.length);
@@ -57,7 +58,7 @@ export function ResultScreen({
   const errorPercentage = Math.max(0, 100 - stats.accuracy);
   const isComplete = userInput === text;
   const formatTime = `${String(minutesTaken).padStart(2, "0")}:${String(secondsTaken).padStart(2, "0")}`;
-  const reportText = `Precision Typing result\nNet WPM: ${wpm}\nGross WPM: ${grossWpm}\nAccuracy: ${stats.accuracy}%\nCorrect characters: ${stats.correctCharacters}\nIncorrect characters: ${stats.incorrectCharacters}\nMissing characters: ${breakdown.missing}\nExtra characters: ${breakdown.extra}\nTime: ${formatTime}`;
+  const reportText = `Precision Typing result\nNet WPM: ${wpm}\nGross WPM: ${grossWpm}\nAccuracy: ${stats.accuracy}%\nCorrect characters: ${stats.correctCharacters}\nIncorrect characters: ${stats.incorrectCharacters}\nFull mistakes: ${mistakeStats.fullMistakes}\nHalf mistakes: ${mistakeStats.halfMistakes}\nWeighted mistakes: ${mistakeStats.weightedMistakes}\nMissing characters: ${breakdown.missing}\nExtra characters: ${breakdown.extra}\nTime: ${formatTime}`;
 
   const downloadReport = () => {
     const url = URL.createObjectURL(new Blob([reportText], { type: "text/plain;charset=utf-8" }));
@@ -105,12 +106,12 @@ export function ResultScreen({
               <Detail label="Characters completed" value={userInput.length} />
               <Detail label="Words completed" value={countWords(userInput)} />
               <Detail label="KDPH" value={stats.kdph} />
-              <Detail label="Full mistakes" value="—" muted />
-              <Detail label="Half mistakes" value="—" muted />
-              <Detail label="Weighted mistakes" value="—" muted />
+              <Detail label="Full mistakes" value={mistakeStats.fullMistakes} danger={mistakeStats.fullMistakes > 0} />
+              <Detail label="Half mistakes" value={mistakeStats.halfMistakes} danger={mistakeStats.halfMistakes > 0} />
+              <Detail label="Weighted mistakes" value={mistakeStats.weightedMistakes} danger={mistakeStats.weightedMistakes > 0} />
             </div>
             <p className="mt-5 border-t border-border pt-4 text-xs text-muted-foreground">
-              Weighted full/half mistake scoring and pass thresholds are not configured for this practice test, so no qualification verdict is shown.
+              Full mistakes are missing, extra, or spacing errors. Other wrong characters count as half mistakes; weighted mistakes = full + half × 0.5.
             </p>
           </div>
 

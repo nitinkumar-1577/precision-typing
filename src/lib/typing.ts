@@ -8,6 +8,12 @@ export interface TypingStats {
   kdph: number;
 }
 
+export interface MistakeStats {
+  fullMistakes: number;
+  halfMistakes: number;
+  weightedMistakes: number;
+}
+
 export type HighlightState = "correct" | "incorrect" | "missed" | "pending" | "current";
 
 export function getHighlightState(
@@ -24,6 +30,52 @@ export function getHighlightState(
 
 export function countWords(value: string): number {
   return value.trim() ? value.trim().split(/\s+/).length : 0;
+}
+
+export function calculateMistakeStats(reference: string, input: string): MistakeStats {
+  let fullMistakes = 0;
+  let halfMistakes = 0;
+  const rows = reference.length + 1;
+  const cols = input.length + 1;
+  const costs = Array.from({ length: rows }, (_, row) =>
+    Array.from({ length: cols }, (_, col) => row + col),
+  );
+
+  for (let row = 1; row < rows; row += 1) {
+    for (let col = 1; col < cols; col += 1) {
+      const substitution = costs[row - 1][col - 1] + (reference[row - 1] === input[col - 1] ? 0 : 1);
+      costs[row][col] = Math.min(costs[row - 1][col] + 1, costs[row][col - 1] + 1, substitution);
+    }
+  }
+
+  let row = reference.length;
+  let col = input.length;
+  while (row > 0 || col > 0) {
+    if (
+      row > 0
+      && col > 0
+      && costs[row][col] === costs[row - 1][col - 1] + (reference[row - 1] === input[col - 1] ? 0 : 1)
+    ) {
+      if (reference[row - 1] !== input[col - 1]) {
+        if (reference[row - 1] === " " || input[col - 1] === " ") fullMistakes += 1;
+        else halfMistakes += 1;
+      }
+      row -= 1;
+      col -= 1;
+    } else if (row > 0 && costs[row][col] === costs[row - 1][col] + 1) {
+      fullMistakes += 1;
+      row -= 1;
+    } else {
+      fullMistakes += 1;
+      col -= 1;
+    }
+  }
+
+  return {
+    fullMistakes,
+    halfMistakes,
+    weightedMistakes: Number((fullMistakes + halfMistakes / 2).toFixed(1)),
+  };
 }
 
 export function buildExactCharacterPassage(source: string, target: number): string {
