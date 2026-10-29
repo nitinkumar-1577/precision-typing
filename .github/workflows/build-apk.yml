@@ -42,8 +42,13 @@ jobs:
       - name: Build web app
         run: npm run build
 
+      - name: Check Capacitor CLI
+        run: |
+          npm ls @capacitor/cli @capacitor/core @capacitor/android
+          npm exec -- cap --version
+
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: npm exec -- cap sync android
 
       - name: Build debug APK
         run: |
