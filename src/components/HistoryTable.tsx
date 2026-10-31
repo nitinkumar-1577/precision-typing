@@ -18,14 +18,9 @@ export const HistoryTable = memo(function HistoryTable({ history }: { history: T
           </thead>
           <tbody>
             {history
-            .filter((r) => {
-              const testDate = new Date(r.date);
-              const oneDayAgo = new Date();
-              oneDayAgo.setDate(oneDayAgo.getDate()-1);
-              return testDate >= oneDayAgo; })
             .map((r, i) => (
               <tr key={i} className="border-b border-border/50 last:border-0">
-                <td className="px-3 py-2 text-muted-foreground">{r.date}</td>
+                <td className="px-3 py-2 text-muted-foreground">{new Date(r.date).toLocaleString()}</td>
                 <td className="px-3 py-2 text-center font-mono font-semibold text-foreground">{r.wpm}</td>
                 <td className="px-3 py-2 text-center font-mono text-foreground">{r.accuracy}%</td>
                 <td className="px-3 py-2 text-center capitalize text-muted-foreground">{r.mode}</td>

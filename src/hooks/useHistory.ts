@@ -38,7 +38,7 @@ export function useHistory() {
   const [personalBest, setPersonalBest] = useState<number>(loadPB);
 
   const addResult = useCallback((result: Omit<TestResult, "date">) => {
-    const entry: TestResult = { ...result, date: new Date().toLocaleString() };
+    const entry: TestResult = { ...result, date: new Date().toISOString() };
     setHistory((prev) => {
       const updated = [entry, ...prev].slice(0, MAX_HISTORY_ENTRIES);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
